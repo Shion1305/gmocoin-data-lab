@@ -34,16 +34,16 @@ up:
 down:
     docker compose down
 
-ingest ENVFILE=.env.local:
+ingest ENVFILE='.env.local':
     RUST_LOG=${RUST_LOG:-info} ENVFILE={{ENVFILE}} cargo run --bin gmo-ingestor
 
-api ENVFILE=.env.local:
+api ENVFILE='.env.local':
     RUST_LOG=${RUST_LOG:-info} ENVFILE={{ENVFILE}} cargo run --bin gmo-backtester-api
 
 e2e:
     cargo test --workspace --all-targets -- --ignored e2e
 
-ch-sql file=ops/clickhouse/ddl/init.sql:
+ch-sql file='ops/clickhouse/ddl/init.sql':
     curl -sS --request POST --data-binary @{{file}} http://localhost:8123
 
 grafana-url:
