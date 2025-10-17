@@ -1,10 +1,10 @@
 //! Strongly-typed configuration structures loaded from environment variables.
 
-use std::time::Duration;
+use std::{env, time::Duration};
 
 use anyhow::Result;
 use config::{Config, ConfigError};
-use serde::Deserialize;
+use serde::{de::Error as _, Deserialize, Deserializer};
 
 const DEFAULT_SYMBOLS: &[&str] = &["BTC_JPY", "ETH_JPY"];
 const DEFAULT_CHANNELS: &[&str] = &["ticker", "trades", "orderbooks"];
@@ -143,10 +143,13 @@ pub struct IngestorConfig {
     #[serde(default = "defaults::ws_endpoint")]
     pub ws_endpoint: String,
     /// Symbols to subscribe to (e.g. `BTC_JPY`).
-    #[serde(default = "defaults::symbols")]
+    #[serde(default = "defaults::symbols", deserialize_with = "deserialize_csv_strings")]
     pub symbols: Vec<String>,
     /// Channels to subscribe to (ticker/trades/orderbooks).
-    #[serde(default = "defaults::channels")]
+    #[serde(
+        default = "defaults::channels",
+        deserialize_with = "deserialize_csv_strings"
+    )]
     pub channels: Vec<String>,
     /// Minimum delay between subscription requests in milliseconds.
     #[serde(default = "defaults::subscribe_min_interval_ms")]
@@ -291,7 +294,7 @@ impl BacktesterConfig {
 
 /// Loads ingestor configuration using the `INGESTOR__` environment prefix.
 pub fn load_ingestor_config() -> Result<IngestorConfig> {
-    dotenvy::dotenv().ok();
+    load_env_file();
     build_config_loader("INGESTOR")?
         .try_deserialize()
         .map_err(Into::into)
@@ -299,7 +302,7 @@ pub fn load_ingestor_config() -> Result<IngestorConfig> {
 
 /// Loads backtester configuration using the `BACKTEST__` environment prefix.
 pub fn load_backtester_config() -> Result<BacktesterConfig> {
-    dotenvy::dotenv().ok();
+    load_env_file();
     build_config_loader("BACKTEST")?
         .try_deserialize()
         .map_err(Into::into)
@@ -312,6 +315,67 @@ fn build_config_loader(prefix: &str) -> Result<Config, ConfigError> {
             .list_separator(","),
     );
     builder.build()
+}
+
+fn load_env_file() {
+    if let Ok(filename) = env::var("ENVFILE") {
+        if dotenvy::from_filename(&filename).is_ok() {
+            return;
+        }
+    }
+    dotenvy::dotenv().ok();
+}
+
+fn deserialize_csv_strings<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    struct CsvVisitor;
+
+    impl<'de> serde::de::Visitor<'de> for CsvVisitor {
+        type Value = Vec<String>;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("a sequence or comma separated string")
+        }
+
+        fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+        where
+            A: serde::de::SeqAccess<'de>,
+        {
+            let mut values = Vec::new();
+            while let Some(item) = seq.next_element::<String>()? {
+                values.push(item);
+            }
+            Ok(values)
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            Ok(value
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect())
+        }
+
+        fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            self.visit_str(&value)
+        }
+    }
+
+    deserializer.deserialize_any(CsvVisitor).and_then(|vals| {
+        if vals.is_empty() {
+            Err(D::Error::custom("list may not be empty"))
+        } else {
+            Ok(vals)
+        }
+    })
 }
 
 mod defaults {
