@@ -1,8 +1,6 @@
-version: "3.9"
-
 services:
   redpanda:
-    image: docker.redpanda.com/vectorized/redpanda:v23.3.5
+    image: redpandadata/redpanda:v23.3.5
     container_name: redpanda
     command:
       [
@@ -85,6 +83,10 @@ services:
     command: |
       "sleep 5 && \
        for file in /ddl/*.sql; do \
+         if [ \"$$file\" = \"/ddl/kafka_sources.sql\" ]; then \
+           echo Skipping optional kafka_sources.sql; \
+           continue; \
+         fi; \
          echo Running $$file; \
          curl -sS --retry 5 --retry-delay 2 --request POST clickhouse:8123 --data-binary @$$file; \
        done"
@@ -92,4 +94,3 @@ services:
       - ./ops/clickhouse/ddl:/ddl:ro
     profiles:
       - bootstrap
-

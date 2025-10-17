@@ -37,7 +37,8 @@ crates/common             Shared config, logging, metrics, health utilities
 crates/ingestor           WebSocket → Kafka ingestion pipeline
 crates/backtester_api     ClickHouse-backed gRPC service
 crates/testutils          Test helpers (ephemeral Kafka topics, ClickHouse DBs, fake WS server)
-ops/clickhouse/ddl        DDL for tables + Kafka engine materialised views
+ops/clickhouse/ddl        Core DDL (tables, run automatically in compose)
+ops/clickhouse/optional   Optional Kafka-engine views (apply manually)
 ops/prometheus            Scrape configs for local + k8s deployments
 ops/grafana               Provisioned dashboards
 deploy/k8s                Kubernetes manifests (Deployments, Services, HPA, PDB)

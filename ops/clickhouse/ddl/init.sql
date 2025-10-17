@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS gmo.trades (
     price Float64,
     amount Float64,
     side Enum8('BUY' = 1, 'SELL' = 2)
-) ENGINE = ReplacingMergeTree(event_id)
+) ENGINE = ReplacingMergeTree(exchange_ts)
 ORDER BY (symbol, exchange_ts);
 
 CREATE TABLE IF NOT EXISTS gmo.tickers (
@@ -32,4 +32,3 @@ CREATE TABLE IF NOT EXISTS gmo.orderbooks (
     size Float64
 ) ENGINE = MergeTree
 ORDER BY (symbol, exchange_ts, price, side);
-

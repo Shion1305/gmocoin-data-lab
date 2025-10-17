@@ -1,14 +1,5 @@
--- Kafka engine tables that ingest protobuf payloads emitted by the ingestor.
--- Requires mounting proto/market.proto into ClickHouse's format schema path.
-
-) ENGINE = Kafka
-SETTINGS kafka_broker_list = '{KAFKA_BROKERS}',
-        kafka_topic_list = 'gmo.market.trades',
-        kafka_group_name = 'clickhouse-trades-consumer',
-        kafka_format = 'Protobuf',
-        format_schema = 'market.proto:gmocoin.market.MarketMessage',
-        kafka_num_consumers = 1,
-        kafka_max_block_size = 1048576;
+-- Optional Kafka engine tables consuming MarketMessage protobuf payloads.
+-- Apply manually when running ClickHouse with Kafka support.
 
 CREATE TABLE IF NOT EXISTS gmo.trades_kafka (
     received_at_ns Int64,
@@ -21,7 +12,7 @@ CREATE TABLE IF NOT EXISTS gmo.trades_kafka (
         side String
     )
 ) ENGINE = Kafka
-SETTINGS kafka_broker_list = '{KAFKA_BROKERS}',
+SETTINGS kafka_broker_list = 'redpanda:9092',
         kafka_topic_list = 'gmo.market.trades',
         kafka_group_name = 'clickhouse-trades-consumer',
         kafka_format = 'Protobuf',
@@ -40,7 +31,7 @@ CREATE TABLE IF NOT EXISTS gmo.tickers_kafka (
         volume_24h Float64
     )
 ) ENGINE = Kafka
-SETTINGS kafka_broker_list = '{KAFKA_BROKERS}',
+SETTINGS kafka_broker_list = 'redpanda:9092',
         kafka_topic_list = 'gmo.market.ticker',
         kafka_group_name = 'clickhouse-ticker-consumer',
         kafka_format = 'Protobuf',
@@ -63,7 +54,7 @@ CREATE TABLE IF NOT EXISTS gmo.orderbooks_kafka (
         )
     )
 ) ENGINE = Kafka
-SETTINGS kafka_broker_list = '{KAFKA_BROKERS}',
+SETTINGS kafka_broker_list = 'redpanda:9092',
         kafka_topic_list = 'gmo.market.orderbook.snapshot',
         kafka_group_name = 'clickhouse-orderbook-consumer',
         kafka_format = 'Protobuf',
@@ -71,7 +62,7 @@ SETTINGS kafka_broker_list = '{KAFKA_BROKERS}',
         kafka_num_consumers = 1,
         kafka_max_block_size = 1048576;
 
--- Materialized views streaming data into the historical tables.
+-- These materialized views assume array layout compatible with the nested structure above.
 CREATE MATERIALIZED VIEW IF NOT EXISTS gmo.trades_mv TO gmo.trades AS
 SELECT
     trade.symbol[1] AS symbol,
@@ -102,17 +93,15 @@ SELECT
     toDateTime64(ob_snapshot.exchange_ts_ns[1] / 1e9, 9) AS exchange_ts,
     toDateTime64(received_at_ns / 1e9, 9) AS received_at,
     'BID' AS side,
-    bid_price AS price,
-    bid_size AS size
+    arrayJoin(ob_snapshot.bids.price) AS price,
+    arrayJoin(ob_snapshot.bids.size) AS size
 FROM gmo.orderbooks_kafka
-ARRAY JOIN ob_snapshot.bids.price AS bid_price, ob_snapshot.bids.size AS bid_size
 UNION ALL
 SELECT
     ob_snapshot.symbol[1] AS symbol,
     toDateTime64(ob_snapshot.exchange_ts_ns[1] / 1e9, 9) AS exchange_ts,
     toDateTime64(received_at_ns / 1e9, 9) AS received_at,
     'ASK' AS side,
-    ask_price AS price,
-    ask_size AS size
-FROM gmo.orderbooks_kafka
-ARRAY JOIN ob_snapshot.asks.price AS ask_price, ob_snapshot.asks.size AS ask_size;
+    arrayJoin(ob_snapshot.asks.price) AS price,
+    arrayJoin(ob_snapshot.asks.size) AS size
+FROM gmo.orderbooks_kafka;
