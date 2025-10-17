@@ -1,0 +1,19 @@
+[package]
+name = "gmocoin-proto"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+prost = { workspace = true }
+prost-types = { workspace = true }
+tonic = { workspace = true }
+
+[build-dependencies]
+tonic-build = "0.10"
+prost-build = "0.12"
+

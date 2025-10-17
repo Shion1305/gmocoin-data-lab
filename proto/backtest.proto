@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package gmocoin.backtest;
+
+import "market.proto";
+
+// gRPC API for querying historical GMO Coin market data and streaming replay feeds.
+
+enum BarAgg {
+  BAR_AGG_UNSPECIFIED = 0;
+  BAR_AGG_OHLCV = 1;
+}
+
+enum BarInterval {
+  BAR_INTERVAL_UNSPECIFIED = 0;
+  BAR_INTERVAL_1S = 1;
+  BAR_INTERVAL_5S = 2;
+  BAR_INTERVAL_1M = 3;
+  BAR_INTERVAL_CUSTOM = 4;
+}
+
+message Bar {
+  string symbol = 1;
+  int64 start_ts_ns = 2;
+  int64 end_ts_ns = 3;
+  double open = 4;
+  double high = 5;
+  double low = 6;
+  double close = 7;
+  double volume = 8;
+}
+
+message GetTradesRequest {
+  string symbol = 1;
+  int64 start_ns = 2;
+  int64 end_ns = 3;
+}
+
+message GetBarsRequest {
+  string symbol = 1;
+  BarInterval interval = 2;
+  BarAgg aggregation = 3;
+  int64 start_ns = 4;
+  int64 end_ns = 5;
+  // For BAR_INTERVAL_CUSTOM, clients must provide a positive duration in nanoseconds.
+  uint64 custom_interval_ns = 6;
+}
+
+message GetOrderbookSnapshotRequest {
+  string symbol = 1;
+  int64 at_ns = 2;
+}
+
+message ReplayRequest {
+  repeated string symbols = 1;
+  int64 start_ns = 2;
+  int64 end_ns = 3;
+  double speed = 4;
+}
+
+service BacktestService {
+  rpc GetTrades(GetTradesRequest) returns (stream gmocoin.market.Trade);
+  rpc GetBars(GetBarsRequest) returns (stream Bar);
+  rpc GetOrderbookSnapshot(GetOrderbookSnapshotRequest) returns (gmocoin.market.OrderbookSnapshot);
+  rpc Replay(ReplayRequest) returns (stream gmocoin.market.MarketMessage);
+}
+

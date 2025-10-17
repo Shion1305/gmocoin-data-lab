@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gmo-backtester-api
+  namespace: argocd
+spec:
+  destination:
+    name: in-cluster
+    namespace: marketdata
+  project: default
+  source:
+    repoURL: https://github.com/Shion1305/gmocoin-data-lab.git
+    targetRevision: HEAD
+    path: deploy/k8s/backtester
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

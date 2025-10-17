@@ -1,0 +1,72 @@
+[workspace]
+members = [
+    "proto",
+    "crates/common",
+    "crates/ingestor",
+    "crates/backtester_api",
+    "crates/testutils",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+license = "Apache-2.0"
+version = "0.1.0"
+rust-version = "1.74"
+
+[workspace.dependencies]
+anyhow = "1.0"
+async-trait = "0.1"
+async-stream = "0.3"
+axum = { version = "0.6", features = ["json", "macros"] }
+backoff = "0.4"
+bytes = "1.6"
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde", "std"] }
+clickhouse = "0.12"
+config = "0.14"
+dotenvy = "0.15"
+futures = "0.3"
+http = "0.2"
+once_cell = "1.19"
+parking_lot = "0.12"
+prometheus = "0.13"
+prost = "0.12"
+prost-types = "0.12"
+rand = "0.8"
+rdkafka = { version = "0.36", features = ["cmake-build", "tokio"] }
+reqwest = { version = "0.11", features = ["json", "rustls-tls", "stream"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_with = "3.4"
+thiserror = "1.0"
+tokio = { version = "1.35", features = ["macros", "rt-multi-thread", "signal", "time"] }
+tokio-stream = { version = "0.1", features = ["io-util"] }
+tokio-tungstenite = { version = "0.21", features = ["rustls-tls-webpki-roots"] }
+tokio-util = { version = "0.7", features = ["codec"] }
+tonic = { version = "0.10", features = ["tls", "transport"] }
+tonic-health = "0.10"
+tonic-reflection = "0.10"
+tonic-types = "0.10"
+tonic-web = "0.10"
+tower = "0.4"
+tower-http = { version = "0.4", features = ["trace", "catch-panic"] }
+tungstenite = { version = "0.20", features = ["rustls-tls-native-roots"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json", "time"] }
+url = "2.4"
+uuid = { version = "1.6", features = ["v4"] }
+
+[workspace.dependencies.testcontainers]
+version = "0.15"
+features = ["tokio"]
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "deny"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+
+[profile.dev]
+debug-assertions = true

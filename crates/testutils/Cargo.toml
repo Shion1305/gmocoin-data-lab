@@ -1,0 +1,30 @@
+[package]
+name = "gmocoin-testutils"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+clickhouse = { workspace = true }
+chrono = { workspace = true }
+futures = { workspace = true }
+gmocoin-proto = { path = "../../proto" }
+once_cell = { workspace = true }
+rand = { workspace = true }
+rdkafka = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "net"] }
+tokio-stream = { workspace = true }
+tokio-tungstenite = { workspace = true }
+url = { workspace = true }
+uuid = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

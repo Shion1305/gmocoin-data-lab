@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package gmocoin.market;
+
+// Protobuf messages for GMO Coin market data sourced from the public WebSocket API.
+// See the GMO Coin Crypto API documentation for message formats and rate limits:
+// https://api.coin.z.com/docs/en/
+
+message Trade {
+  string event_id = 1;
+  string symbol = 2;
+  int64 exchange_ts_ns = 3;
+  double price = 4;
+  double amount = 5;
+  string side = 6;
+}
+
+message Ticker {
+  string symbol = 1;
+  int64 exchange_ts_ns = 2;
+  double best_bid = 3;
+  double best_ask = 4;
+  double last = 5;
+  double volume_24h = 6;
+}
+
+message OrderbookLevel {
+  double price = 1;
+  double size = 2;
+}
+
+message OrderbookSnapshot {
+  string symbol = 1;
+  int64 exchange_ts_ns = 2;
+  repeated OrderbookLevel bids = 3;
+  repeated OrderbookLevel asks = 4;
+  // GMO Coin added the `timestamp` field to order book payloads on 2020-04-08.
+  // See the public WebSocket changelog: https://api.coin.z.com/docs/en/
+}
+
+message MarketMessage {
+  oneof msg {
+    Trade trade = 1;
+    Ticker ticker = 2;
+    OrderbookSnapshot ob_snapshot = 3;
+  }
+  int64 received_at_ns = 100;
+}
+

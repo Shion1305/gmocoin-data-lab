@@ -1,0 +1,92 @@
+{
+  "annotations": {
+    "list": [{
+      "builtIn": 1,
+      "datasource": {
+        "type": "grafana",
+        "uid": "-- Grafana --"
+      },
+      "enable": true,
+      "hide": true,
+      "iconColor": "rgba(0, 211, 255, 1)",
+      "name": "Annotations & Alerts",
+      "type": "dashboard"
+    }]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {"defaults": {"unit": "ops"}},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "id": 10,
+      "targets": [
+        {
+          "expr": "sum by(method) (rate(grpc_requests_total[5m]))",
+          "legendFormat": "{{method}}",
+          "refId": "A"
+        }
+      ],
+      "title": "gRPC QPS",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "id": 11,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by(method, le) (rate(grpc_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{method}}",
+          "refId": "A"
+        }
+      ],
+      "title": "gRPC p95 Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "id": 12,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by(method, le) (rate(clickhouse_query_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{method}}",
+          "refId": "A"
+        }
+      ],
+      "title": "ClickHouse Query Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "id": 13,
+      "targets": [
+        {
+          "expr": "sum by(method) (increase(grpc_rows_streamed_total[5m]))",
+          "legendFormat": "{{method}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Rows Streamed",
+      "type": "bargauge"
+    }
+  ],
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["backtester"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "timepicker": {},
+  "timezone": "",
+  "title": "Backtester API",
+  "uid": "gmo-backtester",
+  "version": 1
+}

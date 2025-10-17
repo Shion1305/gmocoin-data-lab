@@ -1,0 +1,11 @@
+/target
+**/*.rs.bk
+Cargo.lock
+.env.local
+.env
+.DS_Store
+/docker/data
+/docker/logs
+.idea
+.vscode
+node_modules

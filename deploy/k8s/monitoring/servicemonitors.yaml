@@ -1,0 +1,36 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: gmo-ingestor
+  namespace: marketdata
+  labels:
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: gmo-ingestor
+  namespaceSelector:
+    matchNames: ["marketdata"]
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: gmo-backtester-api
+  namespace: marketdata
+  labels:
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: gmo-backtester-api
+  namespaceSelector:
+    matchNames: ["marketdata"]
+  endpoints:
+    - port: admin
+      path: /metrics
+      interval: 15s

@@ -1,0 +1,120 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backtester-config
+  namespace: marketdata
+data:
+  RUST_LOG: info
+  BACKTEST__GRPC_BIND_ADDR: 0.0.0.0:8080
+  BACKTEST__ADMIN__BIND_ADDR: 0.0.0.0:8081
+  BACKTEST__CLICKHOUSE__URL: http://clickhouse.marketdata.svc.cluster.local:8123
+  BACKTEST__CLICKHOUSE__DATABASE: gmo
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gmo-backtester-api
+  namespace: marketdata
+  labels:
+    app: gmo-backtester-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gmo-backtester-api
+  template:
+    metadata:
+      labels:
+        app: gmo-backtester-api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: backtester
+          image: ghcr.io/Shion1305/gmocoin-data-lab/backtester-api:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: backtester-config
+            - secretRef:
+                name: backtester-secrets
+          ports:
+            - name: grpc
+              containerPort: 8080
+            - name: admin
+              containerPort: 8081
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: admin
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: admin
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 1
+              memory: 512Mi
+      terminationGracePeriodSeconds: 30
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gmo-backtester-api
+  namespace: marketdata
+  labels:
+    app: gmo-backtester-api
+spec:
+  selector:
+    app: gmo-backtester-api
+  ports:
+    - name: grpc
+      port: 8080
+      targetPort: grpc
+    - name: admin
+      port: 8081
+      targetPort: admin
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: gmo-backtester-api-pdb
+  namespace: marketdata
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: gmo-backtester-api
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: gmo-backtester-api-hpa
+  namespace: marketdata
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: gmo-backtester-api
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
