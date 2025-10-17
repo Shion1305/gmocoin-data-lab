@@ -354,11 +354,37 @@ where
         where
             E: serde::de::Error,
         {
-            Ok(value
-                .split(',')
-                .map(|s| s.trim().to_string())
-                .filter(|s| !s.is_empty())
-                .collect())
+            let trimmed = value.trim();
+            if trimmed.is_empty() {
+                return Err(E::custom("list may not be empty"));
+            }
+
+            if trimmed.starts_with('[') && trimmed.ends_with(']') {
+                serde_json::from_str::<Vec<String>>(trimmed)
+                    .map_err(|err| E::custom(format!("invalid json array: {err}")))
+                    .and_then(|vals| {
+                        if vals.is_empty() {
+                            Err(E::custom("list may not be empty"))
+                        } else {
+                            Ok(vals)
+                        }
+                    })
+            } else {
+                let values: Vec<String> = trimmed
+                    .split(',')
+                    .map(|s| {
+                        s.trim()
+                            .trim_matches(|ch| ch == '"' || ch == '\'')
+                            .to_string()
+                    })
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                if values.is_empty() {
+                    Err(E::custom("list may not be empty"))
+                } else {
+                    Ok(values)
+                }
+            }
         }
 
         fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
@@ -376,6 +402,78 @@ where
             Ok(vals)
         }
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serial_test::serial;
+    use std::{env, io::Write};
+    use tempfile::NamedTempFile;
+
+    const ENV_KEYS: [&str; 4] = [
+        "ENVFILE",
+        "INGESTOR__SYMBOLS",
+        "INGESTOR__CHANNELS",
+        "INGESTOR__ADMIN__BIND_ADDR",
+    ];
+
+    fn clear_env() {
+        for key in ENV_KEYS {
+            env::remove_var(key);
+        }
+    }
+
+    #[serial]
+    #[test]
+    fn loads_ingestor_config_from_envfile_with_csv_lists() {
+        clear_env();
+        let mut file = NamedTempFile::new().expect("env file");
+        writeln!(
+            file,
+            "INGESTOR__SYMBOLS=\"BTC_JPY, ETH_JPY\"\nINGESTOR__CHANNELS=\"ticker,trades,orderbooks\"\nINGESTOR__ADMIN__BIND_ADDR=127.0.0.1:9200"
+        )
+        .expect("write env");
+        file.flush().expect("flush env");
+        let path = file.path().to_str().expect("path str").to_owned();
+        env::set_var("ENVFILE", &path);
+        dotenvy::from_filename(&path).expect("load env file");
+
+        let config = load_ingestor_config().expect("config");
+        assert_eq!(config.symbols, vec!["BTC_JPY", "ETH_JPY"]);
+        assert_eq!(
+            config.channels,
+            vec!["ticker".to_string(), "trades".to_string(), "orderbooks".to_string()]
+        );
+        assert_eq!(config.admin.bind_addr, "127.0.0.1:9200");
+
+        clear_env();
+    }
+
+    #[serial]
+    #[test]
+    fn loads_ingestor_config_from_json_array_env_vars() {
+        clear_env();
+        let mut file = NamedTempFile::new().expect("env file");
+        writeln!(
+            file,
+            "INGESTOR__ADMIN__BIND_ADDR=127.0.0.1:9300"
+        )
+        .expect("write env");
+        file.flush().expect("flush env");
+        let path = file.path().to_str().expect("path str").to_owned();
+        env::set_var("ENVFILE", &path);
+        dotenvy::from_filename(&path).expect("load env file");
+        env::set_var("INGESTOR__SYMBOLS", "[\"BTC_JPY\",\"ETH_JPY\"]");
+        env::set_var("INGESTOR__CHANNELS", "[\"ticker\",\"orderbooks\"]");
+
+        let config = load_ingestor_config().expect("config");
+        assert_eq!(config.symbols, vec!["BTC_JPY", "ETH_JPY"]);
+        assert_eq!(config.channels, vec!["ticker", "orderbooks"]);
+        assert_eq!(config.admin.bind_addr, "127.0.0.1:9300");
+
+        clear_env();
+    }
 }
 
 mod defaults {

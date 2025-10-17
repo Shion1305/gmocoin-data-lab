@@ -55,6 +55,10 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json", "time"] }
 url = "2.4"
 uuid = { version = "1.6", features = ["v4"] }
+tempfile = "3.10"
+
+[workspace.dependencies.serial_test]
+version = "2.0"
 
 [workspace.dependencies.testcontainers]
 version = "0.15"
