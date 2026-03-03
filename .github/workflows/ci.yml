@@ -52,7 +52,7 @@ jobs:
         ports:
           - 8123:8123
       clickhouse-init:
-        image: curlimages/curl:8.4.0
+        image: curlimages/curl:8.18.0
         needs: clickhouse
     steps:
       - uses: actions/checkout@v4
