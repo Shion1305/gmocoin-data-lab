@@ -1,6 +1,6 @@
 services:
   redpanda:
-    image: redpandadata/redpanda:v23.3.5
+    image: redpandadata/redpanda:v23.3.21
     container_name: redpanda
     command:
       [
