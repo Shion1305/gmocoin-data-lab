@@ -40,7 +40,7 @@ services:
       - "8085:8080"
 
   clickhouse:
-    image: clickhouse/clickhouse-server:23.8
+    image: clickhouse/clickhouse-server:23.12
     container_name: clickhouse
     environment:
       CLICKHOUSE_DB: gmo
