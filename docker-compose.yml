@@ -76,7 +76,7 @@ services:
       - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
 
   schema-init:
-    image: curlimages/curl:8.4.0
+    image: curlimages/curl:8.18.0
     depends_on:
       - clickhouse
     entrypoint: ["/bin/sh", "-c"]
