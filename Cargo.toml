@@ -18,7 +18,7 @@ rust-version = "1.74"
 anyhow = "1.0"
 async-trait = "0.1"
 async-stream = "0.3"
-axum = { version = "0.6", features = ["json", "macros"] }
+axum = { version = "0.8", features = ["json", "macros"] }
 backoff = "0.4"
 bytes = "1.6"
 chrono = { version = "0.4", default-features = false, features = ["clock", "serde", "std"] }
