@@ -23,7 +23,7 @@ backoff = "0.4"
 bytes = "1.6"
 chrono = { version = "0.4", default-features = false, features = ["clock", "serde", "std"] }
 clickhouse = "0.12"
-config = "0.14"
+config = "0.15"
 dotenvy = "0.15"
 futures = "0.3"
 http = "0.2"
